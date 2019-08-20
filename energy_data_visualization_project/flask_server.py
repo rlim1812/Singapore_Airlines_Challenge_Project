@@ -1,8 +1,11 @@
 # import necessary packages
 from flask import Flask
+from flask import send_from_directory
 import simplejson as json
 import sqlite3
 import pandas as pd
+from dateutil import parser
+from pmdarima.arima import auto_arima
 
 # create Flask app
 app = Flask(__name__)
@@ -44,3 +47,8 @@ def get_gas_data():
     json_object = json.dumps(data_fetched, sort_keys = True)
 
     return json_object
+
+# set up route to make time series forecast and send data with prediction values to front end
+@app.route('/make_forecast')
+def make_forecast():
+     return send_from_directory('data', "electricity_time_series_data_with_forecast.csv", as_attachment=True)
