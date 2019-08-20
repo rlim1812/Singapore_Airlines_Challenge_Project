@@ -3,8 +3,6 @@ from flask import Flask, request, render_template
 from flask_cors import CORS, cross_origin
 import simplejson as json
 import sqlite3
-import pandas as pdv
-import pdb
 
 # create Flask app
 app = Flask(__name__)
