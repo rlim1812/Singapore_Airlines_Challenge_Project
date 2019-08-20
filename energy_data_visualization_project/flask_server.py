@@ -1,8 +1,11 @@
 # import necessary packages
 from flask import Flask, request, render_template
 from flask_cors import CORS, cross_origin
+from flask import send_from_directory
 import simplejson as json
 import sqlite3
+from dateutil import parser
+from pmdarima.arima import auto_arima
 
 # create Flask app
 app = Flask(__name__)
@@ -35,11 +38,7 @@ def get_electricity_data():
     # represent query result as json, then convert to list
     json_object = json.dumps(data_fetched, sort_keys = True)
 
-    # import pdb; pdb.set_trace()
-
     return json_object
-
-
 
 # set up route for front end to get LBNL gas data from the database
 @app.route('/gas_data')
@@ -53,14 +52,15 @@ def get_gas_data():
     data_fetched = cur.fetchall()
     conn.commit()
 
-
-
     # represent query result as json, then convert to list
     json_object = json.dumps(data_fetched, sort_keys = True)
 
     return json_object
 
-if __name__ == "__main__":
-    # port = int(os.environ.get('PORT', 5000))
-    # app.run(host='0.0.0.0', port=port)
+# set up route to make time series forecast and send data with prediction values to front end
+@app.route('/make_forecast')
+def make_forecast():
+     return send_from_directory('data', "electricity_time_series_data_with_forecast.csv", as_attachment=True)
+
+ if __name__ == "__main__":
     app.run(debug=True)
