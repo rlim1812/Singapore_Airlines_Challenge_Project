@@ -57,10 +57,20 @@ def get_gas_data():
 
     return json_object
 
+# # set up route to make time series forecast and send data with prediction values to front end
+# @app.route('/make_forecast')
+# def make_forecast():
+#      return send_from_directory('data', "electricity_time_series_data_with_forecast.csv", as_attachment=True)
+
+def make_pd_forecast():
+    return pd.read_csv("data/electricity_time_series_data_with_forecast.csv")
+
 # set up route to make time series forecast and send data with prediction values to front end
 @app.route('/make_forecast')
 def make_forecast():
-     return send_from_directory('data', "electricity_time_series_data_with_forecast.csv", as_attachment=True)
+    # electricity_data_with_forecast = pd.read_csv("data/electricity_time_series_data_with_forecast.csv")
+    # json_object = json.dumps(json_electricity_data_with_forecast.to_dict())
+    return jsonify(make_pd_forecast)
 
- if __name__ == "__main__":
+if __name__ == "__main__":
     app.run(debug=True)
