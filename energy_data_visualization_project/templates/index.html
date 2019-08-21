@@ -51,48 +51,83 @@
 
 
   d3.queue()
-    .defer(d3.csv, "http://localhost:5000/electricity_forecast")
-    // .defer(d3.json, "http://localhost:5000/electricity_data")
+    // .defer(d3.csv, "http://localhost:5000/electricity_forecast")
+    .defer(d3.json, "http://localhost:5000/electricity_forecast")
+    .defer(d3.json, "http://localhost:5000/electricity_data")
     // .defer(d3.json, "http://localhost:5000/gas_data")
     .await(plotData);
 
-  // d3.csv("http://localhost:5000/make_forecast", function (electricity) {
-  function plotData(error, electricity, gas) {
+  // d3.json("http://localhost:5000/electricity_forecast", function (electricity_data) {
+  function plotData(error, electricityForecast, electricityData) {
+
+    'use strict';
 
     // if (error) { console.log(error); }
 
-    var dataGroups = ["Electricity", "Gas"];
+    // var dataGroups = ["Electricity Real"];
+    // var dataGroups = ["Electricity Prediction"];
+    var dataGroups = ["Real", "Prediction"];
 
     // Truncate the data sets
-    // electricity = electricity.slice(0,100);
+    electricityData = electricityData.slice(electricityData.length - 40, electricityData.length);
     // gas = gas.slice(0,300);
 
-    // console.log(electricity, gas)
+    console.log(electricityForecast);
+    console.log(electricityData);
 
-    // // var data = json.map( d => ({date: d3.timeParse("%e %b %-I:%M %p")(d[0]), value: d[1]}) );
-    // var data = dataGroups.map( function(grpName) {
-    //   return {
-    //     name: grpName,
-    //     entries: json.map( function (d) {
-    //       return {
-    //         date: d3.timeParse("%Y-%m-%d %H:%M:%S")(d[0]),
-    //         value: d[1]
-    //         }})
-    //     }});
+    var elecPredArray = [];
+    var elecRealArray = [];
 
-    // debugger;
+    // Loop through and get the electricity forecast data
+    for (const [key, value] of Object.entries(electricityForecast)) {
+      elecPredArray.push({
+        date:  d3.timeParse("%Y-%m-%d %H:%M:%S")(value.Timestamp),
+        value: value.ElectricityConsumptionForecast
+      })
+    }
+
+    // Loop through and get the real electricity data
+    for (const [key, value] of Object.entries(electricityForecast)) {
+      elecRealArray.push({
+        date:  d3.timeParse("%Y-%m-%d %H:%M:%S")(value.Timestamp),
+        value: value["Building 74 - kWh Total Electricity (kWh)"]
+      })
+    }
 
     // Parse the data from the JSON inputs
     var dataArray = [
+      // {
+      //   name:    "Electricity Real",
+      //   entries: electricityData.map( function (d) {
+      //     // debugger;
+      //     return {
+      //       date:  d3.timeParse("%Y-%m-%d %H:%M:%S")(d[0]),
+      //       value: d[1]
+      //       }})
+      // },
       {
-        name: "Electricity",
-        entries: electricity.map( function (d) {
-          // debugger;
-          return {
-            date: d3.timeParse("%Y-%m-%d %H:%M:%S")(d[0]),
-            value: d[1]
-            }})
+        name:    "Real",
+        entries: elecRealArray
       },
+      {
+        name:    "Prediction",
+        entries: elecPredArray
+      }
+    ];
+
+    console.log(dataArray);
+
+    // var dataArray = [
+    //   {
+      // {
+      //   name: "Electricity",
+      //   entries: electricity_data.map( function (d) {
+      //     // debugger;
+      //     return {
+      //       date: d3.timeParse("%Y-%m-%d %H:%M:%S")(d[0]),
+      //       value: d[1]
+      //       }})
+      // }
       // {
       //   name: "Electricity Prediction",
       //   entries: electricity.map( function (d) {
@@ -101,20 +136,20 @@
       //       value: d[2]
       //       }})
       // },
-      {
-        name: "Gas",
-        entries: gas.map( function (d) {
-          return {
-            date: d3.timeParse("%m/%d/%Y %H:%M:%S")(d[0].split(" PST")[0]),
+      // {
+      //   name: "Gas",
+      //   entries: gas.map( function (d) {
+      //     return {
+      //       date: d3.timeParse("%m/%d/%Y %H:%M:%S")(d[0].split(" PST")[0]),
+      //
+      //       // Value needs to be converted to kWh
+      //       value: d[1] * 29.3
+      //       }})
+      // }
 
-            // Value needs to be converted to kWh
-            value: d[1] * 29.3
-            }})
-      }
+    // ];
 
-    ];
-
-    console.log(dataArray);
+    // console.log(dataArray);
 
     // debugger;
 
@@ -209,11 +244,11 @@
           .style("fill", function(d) { return myColor(d.name) })
           .style("font-size", 15);
 
-    var legend = svg.append("g")
-      .attr("class", "legend")
-      .attr("transform", "translate(50,30)")
-      .style("font-size", "12px")
-      .call(d3.legend)
+    // var legend = svg.append("g")
+    //   .attr("class", "legend")
+    //   .attr("transform", "translate(50,30)")
+    //   .style("font-size", "12px")
+    //   .call(d3.legend)
 
     // setTimeout(function() {
     //   legend
@@ -223,6 +258,6 @@
     // }, 1000)
 
 
-    };
+  };
 
 </script>
