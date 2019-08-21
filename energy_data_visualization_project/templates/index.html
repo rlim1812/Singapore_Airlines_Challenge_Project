@@ -51,9 +51,9 @@
 
 
   d3.queue()
-    // .defer(d3.csv, "http://localhost:5000/make_forecast")
-    .defer(d3.json, "http://localhost:5000/electricity_data")
-    .defer(d3.json, "http://localhost:5000/gas_data")
+    .defer(d3.csv, "http://localhost:5000/electricity_forecast")
+    // .defer(d3.json, "http://localhost:5000/electricity_data")
+    // .defer(d3.json, "http://localhost:5000/gas_data")
     .await(plotData);
 
   // d3.csv("http://localhost:5000/make_forecast", function (electricity) {
@@ -64,8 +64,8 @@
     var dataGroups = ["Electricity", "Gas"];
 
     // Truncate the data sets
-    electricity = electricity.slice(0,100);
-    gas = gas.slice(0,300);
+    // electricity = electricity.slice(0,100);
+    // gas = gas.slice(0,300);
 
     // console.log(electricity, gas)
 
