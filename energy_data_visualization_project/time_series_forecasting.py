@@ -1,69 +1,68 @@
 import sqlite3
 import pandas as pd
-from dateutil import parser
-from pmdarima.arima import auto_arima
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression, Lasso, Ridge
+from sklearn.metrics import mean_squared_error, r2_score
 
 # form connection to database
 conn = sqlite3.connect('EnergyConsumption.db')
 cur = conn.cursor()
 
+num_rows = 1000
 # get data from database
-electricity_data = pd.read_sql('SELECT * FROM ElectricityConsumption LIMIT 200;', con = conn)
+time_series_data = pd.read_sql('SELECT * FROM ElectricityConsumption LIMIT {};'.format(num_rows), con = conn)
+time_series_data = time_series_data.loc[:,["Timestamp", "Building 74 - kWh Total Electricity (kWh)"]]
 
-# convert time column to datetime object type
-time_values_datetime = []
-time = electricity_data["Timestamp"]
+# preprocess the data
+energy_consumption_values_list = list(time_series_data["Building 74 - kWh Total Electricity (kWh)"])
+previous_value_1_step_time_lag = []
+previous_value_2_step_time_lag = []
+previous_value_3_step_time_lag = []
+previous_value_4_step_time_lag = []
 
-i = 0
-while i < len(time):
-    time_value_datetime = parser.parse(time[i])
-    time_values_datetime.append(time_value_datetime)
+i = 4
+while i < len(energy_consumption_values_list):
+    previous_value_1_step_time_lag.append(energy_consumption_values_list[i - 1])
+    previous_value_2_step_time_lag.append(energy_consumption_values_list[i - 2])
+    previous_value_3_step_time_lag.append(energy_consumption_values_list[i - 3])
+    previous_value_4_step_time_lag.append(energy_consumption_values_list[i - 4])
     i += 1
 
-electricity_data["Timestamp"] = time_values_datetime
-electricity_data_modified = electricity_data.set_index("Timestamp")
+time_series_data = time_series_data.iloc[4:,:]
+time_series_data.insert(2, "1 Step Time Lag", previous_value_1_step_time_lag)
+time_series_data.insert(3, "2 Step Time Lag", previous_value_2_step_time_lag)
+time_series_data.insert(4, "3 Step Time Lag", previous_value_3_step_time_lag)
+time_series_data.insert(5, "4 Step Time Lag", previous_value_4_step_time_lag)
 
-# Create ARIMA time series model
-model = auto_arima(electricity_data_modified, start_p=1, start_q=1,
-                                          max_p=20, max_q=20, m=12,
-                                          start_P=0, seasonal=True,
-                                              d=1, D=1, trace=True,
-                                             error_action='ignore',
-                                            suppress_warnings=True,
-                                                     stepwise=True)
+# Split the data into training set and test set
+X = time_series_data.iloc[:,2:6]
+y = time_series_data.iloc[:,1]
 
-# Split the data into training data and testing data
-training_data = electricity_data_modified.iloc[0:160,]
-test_data =electricity_data_modified.iloc[160:,]
+cut_off_value = int(0.8 * time_series_data.shape[0])
+X_train = X.iloc[0:cut_off_value,]
+X_test = X.iloc[cut_off_value:,]
+y_train = y.iloc[0:cut_off_value,]
+y_test = y.iloc[cut_off_value:,]
 
-# fit the model to the training data
-model.fit(training_data)
+# Build the model and perform predictions
+ridge_regression_model = Ridge()
+ridge_regression_model.fit(X_train, y_train)
+y_pred = ridge_regression_model.predict(X_test)
 
-# make predictions using the model
-forecast = model.predict(n_periods = 40)
+prediction_values = [0 for i in range(time_series_data.shape[0])]
 
-# create a new dataframe that includes the electricity usage time series data and the forecast values
-electricity_consumption_forecast = pd.DataFrame(forecast, index = test_data.index, columns = ["ElectricityConsumptionForecast"])
-electricity_time_series_data_with_forecast = pd.concat([electricity_data, electricity_consumption_forecast], axis=1)
-electricity_time_series_data_with_forecast.fillna(-1000, inplace = True)
-energy_consumption_forecast_list = list(electricity_time_series_data_with_forecast["ElectricityConsumptionForecast"])
+i = len(prediction_values) - 1
+j = len(y_pred) - 1
 
-i = 200 - 1 - 39
-j = 200
+while j >= 0:
+    prediction_values[i] = y_pred[j]
+    i -= 1
+    j -= 1
 
-num_iterations = 40
-for num_iter in range(num_iterations):
-    temp = energy_consumption_forecast_list[i]
-    energy_consumption_forecast_list[i] = energy_consumption_forecast_list[j]
-    energy_consumption_forecast_list[j] = temp
-    i += 1
-    j += 1
+time_series_data.insert(1, "Prediction", prediction_values)
 
-electricity_time_series_data_with_forecast["ElectricityConsumptionForecast"] = energy_consumption_forecast_list
-electricity_time_series_data_with_forecast = electricity_time_series_data_with_forecast.iloc[:200, :]
-
-# store the dataframe as a table in sql database
-# electricity_time_series_data_with_forecast.to_sql('ElectricityTimeSeriesForecast', conn, if_exists="replace", index = False)
-electricity_time_series_data_with_forecast.to_csv("data/ElectricityTimeSeriesForecast.csv")
+# save the data as a csv file
+time_series_data.to_csv("data/ElectricityTimeSeriesForecast.csv")
 
 conn.commit()
