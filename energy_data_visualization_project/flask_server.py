@@ -1,6 +1,6 @@
 # import necessary packages
-from flask import Flask
-from flask import send_from_directory
+from flask import Flask, render_template, jsonify, send_from_directory
+from flask_cors import CORS
 import simplejson as json
 import sqlite3
 import pandas as pd
@@ -9,12 +9,16 @@ from pmdarima.arima import auto_arima
 
 # create Flask app
 app = Flask(__name__)
+# cors = CORS(app)
 
 # form connection to database
 conn = sqlite3.connect('EnergyConsumption.db')
 cur = conn.cursor()
 
 i = 1000
+@app.route("/")
+def index():
+    return render_template("index.html")
 
 # set up route for front end to get LBNL electricity data from the database
 @app.route('/electricity_data')
@@ -68,3 +72,6 @@ def make_forecast_helper(j):
     i += 1000
     # convert the data to json format and return it to the front end
     return electricity_consumption_forecast.to_json(orient="index")
+
+if __name__ == "__main__":
+    app.run()
