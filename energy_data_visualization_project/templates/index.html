@@ -82,7 +82,8 @@
     for (const [key, value] of Object.entries(electricityForecast)) {
       elecPredArray.push({
         date:  d3.timeParse("%Y-%m-%d %H:%M:%S")(value.Timestamp),
-        value: value.ElectricityConsumptionForecast
+        value: value.Prediction
+        // value: value.ElectricityConsumptionForecast
       })
     }
 
