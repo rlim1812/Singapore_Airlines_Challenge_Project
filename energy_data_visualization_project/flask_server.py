@@ -9,12 +9,13 @@ from pmdarima.arima import auto_arima
 
 # create Flask app
 app = Flask(__name__)
-cors = CORS(app)
+# cors = CORS(app)
 
 # form connection to database
 conn = sqlite3.connect('EnergyConsumption.db')
 cur = conn.cursor()
 
+i = 1000
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -56,10 +57,19 @@ def get_gas_data():
 # set up route to get electricity forecast data and send it to the front end
 @app.route('/electricity_forecast')
 def make_forecast():
+    global i
+
+    while i < 46001:
+        return make_forecast_helper(i)
+
+def make_forecast_helper(j):
+    global i
+
     # get electricity consumption forecast data from csv file
-    electricity_consumption_forecast = pd.read_csv("data/ElectricityTimeSeriesForecast.csv")
+    electricity_consumption_forecast = pd.read_csv("data/ElectricityTimeSeriesForecast{}.csv".format(j))
     electricity_consumption_forecast = electricity_consumption_forecast[electricity_consumption_forecast['Prediction'] != 0]
 
+    i += 1000
     # convert the data to json format and return it to the front end
     return electricity_consumption_forecast.to_json(orient="index")
 
