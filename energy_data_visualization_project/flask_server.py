@@ -58,7 +58,7 @@ def get_gas_data():
 def make_forecast():
     # get electricity consumption forecast data from csv file
     electricity_consumption_forecast = pd.read_csv("data/ElectricityTimeSeriesForecast.csv")
-    electricity_consumption_forecast = electricity_consumption_forecast[electricity_consumption_forecast['ElectricityConsumptionForecast'] != -1000]
+    electricity_consumption_forecast = electricity_consumption_forecast[electricity_consumption_forecast['Prediction'] != 0]
 
     # convert the data to json format and return it to the front end
     return electricity_consumption_forecast.to_json(orient="index")
