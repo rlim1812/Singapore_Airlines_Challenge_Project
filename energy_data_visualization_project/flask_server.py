@@ -14,6 +14,8 @@ app = Flask(__name__)
 conn = sqlite3.connect('EnergyConsumption.db')
 cur = conn.cursor()
 
+i = 1000
+
 # set up route for front end to get LBNL electricity data from the database
 @app.route('/electricity_data')
 def get_electricity_data():
@@ -51,9 +53,18 @@ def get_gas_data():
 # set up route to get electricity forecast data and send it to the front end
 @app.route('/electricity_forecast')
 def make_forecast():
+    global i
+
+    while i < 46001:
+        return make_forecast_helper(i)
+
+def make_forecast_helper(j):
+    global i
+
     # get electricity consumption forecast data from csv file
-    electricity_consumption_forecast = pd.read_csv("data/ElectricityTimeSeriesForecast.csv")
+    electricity_consumption_forecast = pd.read_csv("data/ElectricityTimeSeriesForecast{}.csv".format(j))
     electricity_consumption_forecast = electricity_consumption_forecast[electricity_consumption_forecast['Prediction'] != 0]
 
+    i += 1000
     # convert the data to json format and return it to the front end
     return electricity_consumption_forecast.to_json(orient="index")
