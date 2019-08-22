@@ -131,6 +131,9 @@
       // dataArray[0].entries = dataArray[0].slice(0, 100);
       // dataArray[1].entries = dataArray[1].slice(0, 100);
 
+      // Clear the previous plot
+      d3.selectAll("svg > g > *").remove();
+
       // Color scaling: One color for each group
       var myColor = d3.scaleOrdinal()
         .domain(dataGroups)
