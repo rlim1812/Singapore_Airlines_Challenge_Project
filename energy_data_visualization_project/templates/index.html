@@ -14,8 +14,8 @@
 
   // Set the dimensions and margins of the graph
   var margin = {top: 10, right: 100, bottom: 30, left: 60},
-    width  = 460 - margin.left - margin.right;
-    height = 400 - margin.top  - margin.bottom;
+    width  = 810 - margin.left - margin.right;
+    height = 750 - margin.top  - margin.bottom;
 
   // Append the SVG object to the body of the page
   var svg = d3.select("#my_dataviz")
@@ -82,7 +82,8 @@
     for (const [key, value] of Object.entries(electricityForecast)) {
       elecPredArray.push({
         date:  d3.timeParse("%Y-%m-%d %H:%M:%S")(value.Timestamp),
-        value: value.ElectricityConsumptionForecast
+        value: value.Prediction
+        // value: value.ElectricityConsumptionForecast
       })
     }
 
@@ -116,48 +117,6 @@
     ];
 
     console.log(dataArray);
-
-    // var dataArray = [
-    //   {
-      // {
-      //   name: "Electricity",
-      //   entries: electricity_data.map( function (d) {
-      //     // debugger;
-      //     return {
-      //       date: d3.timeParse("%Y-%m-%d %H:%M:%S")(d[0]),
-      //       value: d[1]
-      //       }})
-      // }
-      // {
-      //   name: "Electricity Prediction",
-      //   entries: electricity.map( function (d) {
-      //     return {
-      //       date: d3.timeParse("%Y-%m-%d %H:%M:%S")(d[0]),
-      //       value: d[2]
-      //       }})
-      // },
-      // {
-      //   name: "Gas",
-      //   entries: gas.map( function (d) {
-      //     return {
-      //       date: d3.timeParse("%m/%d/%Y %H:%M:%S")(d[0].split(" PST")[0]),
-      //
-      //       // Value needs to be converted to kWh
-      //       value: d[1] * 29.3
-      //       }})
-      // }
-
-    // ];
-
-    // console.log(dataArray);
-
-    // debugger;
-
-    // var dataMapX = dataArray.map(values => (d3.extent(values.entries, function(d) { return d.date; })));
-    // var dataMapY = dataArray.map(values => (d3.extent(values.entries, function(d) { return d.value; })));
-
-    // var domainX = dataMapX.reduce((acc, curr) => {return [Math.min(acc[0], curr[0]), Math.max(acc[1], curr[1])];}, dataMapX[0])
-    // var domainY = dataMapX.reduce((acc, curr) => {return [Math.min(acc[0], curr[0]), Math.max(acc[1], curr[1])];}, dataMapY[0])
 
     var domainX = d3.extent(dataArray.map(values => {return values.entries.map(entry => entry.date);}).reduce((prev, curr) => prev.concat(curr)));
     var domainY = d3.extent(dataArray.map(values => {return values.entries.map(entry => entry.value);}).reduce((prev, curr) => prev.concat(curr)));
@@ -196,10 +155,10 @@
 
     // Add the lines
     var line = d3.line()
-      // .x(function(d) { return x(d.date) })
-      // .y(function(d) { return y(d.value)})
       .x(function(d) { return x(+d.date) })
       .y(function(d) { return y(+d.value)});
+
+    // Create the line elements
     svg.selectAll("myLines")
       .data(dataArray)
       .enter()
@@ -210,54 +169,108 @@
         .style("stroke-width", 4)
         .style("fill", "none");
 
-    // // Add the points
-    // svg
-    //   // First we need to enter in a group
-    //   .selectAll("myDots")
-    //   .data(dataArray)
-    //   .enter()
-    //     .append('g')
-    //     .style("fill", function(d){ return myColor(d.name) })
-    //   // Second we need to enter in the 'values' part of this group
-    //   .selectAll("myPoints")
-    //   .data(function(d){ return d.entries })
-    //   .enter()
-    //   .append("circle")
-    //     .attr("cx", function(d) { return x(d.date) })
-    //     .attr("cy", function(d) { return y(d.value) })
-    //     .attr("r", 5)
-    //     .attr("stroke", "white")
+    // Add one dot in the legend for each name.
+    svg.selectAll("myDots")
+      .data(dataGroups)
+      .enter()
+      .append("circle")
+        .attr("cx", 15)
+        // 100 is where the first dot appears. 25 is the distance between dots
+        .attr("cy", function(d, i) { return 10 + i*25 })
+        .attr("r", 5)
+        // .attr("stroke", "white")
+        .style("fill", function(d){ return myColor(d) })
 
     // Add a legend at the end of each line
-    svg
-      .selectAll("myLabels")
-      .data(dataArray)
+    svg.selectAll("myLabels")
+      .data(dataGroups)
       .enter()
-        .append('g')
-        .append("text")
-          // Keep only the last value of each time series
-          .datum(function(d) { return {name: d.name, value: d.entries[d.entries.length - 1]}; })
-          // Put the text at the position of the last point
-          .attr("transform", function(d) { return "translate(" + x(d.value.date) + "," + y(d.value.value) + ")"; })
-          .attr("x", 12)    // Shift the text a bit more right
-          .text(function(d) { return d.name; })
-          .style("fill", function(d) { return myColor(d.name) })
-          .style("font-size", 15);
+        // .append('g')
+      .append("text")
+        .attr("x", 25)
+        // 100 is where the first dot appears. 25 is the distance between dots
+        .attr("y", function(d, i) { return 15 + i*25 })
+        .style("fill", function(d) { return myColor(d) })
+        .text(function(d) { return d })
+        .attr("text-anchor", "left")
+        .style("alignmnet-baseline", "middle")
+  }
 
-    // var legend = svg.append("g")
-    //   .attr("class", "legend")
-    //   .attr("transform", "translate(50,30)")
-    //   .style("font-size", "12px")
-    //   .call(d3.legend)
-
-    // setTimeout(function() {
-    //   legend
-    //     .style("font-size", "20px")
-    //     .attr("data-style-padding", 10)
-    //     .call(d3.legend)
-    // }, 1000)
-
-
-  };
+  // var inter = setInterval(function() {
+  //               updateData()
+  //             }, 1000);
+  //
+  // function updateData() {
+  //
+  //   d3.queue()
+  //     // .defer(d3.csv, "http://localhost:5000/electricity_forecast")
+  //     .defer(d3.json, "http://localhost:5000/electricity_forecast")
+  //     .defer(d3.json, "http://localhost:5000/electricity_data")
+  //     // .defer(d3.json, "http://localhost:5000/gas_data")
+  //     .await(plotUpdatedData);
+  //
+  //   // Select the section we want to apply our changes to
+  //   var svg = d3.select("#my_dataviz").transition();
+  //
+  //   // d3.json("http://localhost:5000/electricity_forecast", function (electricity_data) {
+  //   function plotUpdatedData(error, electricityForecast, electricityData) {
+  //
+  //     var elecPredArray = [];
+  //     var elecRealArray = [];
+  //
+  //     // Loop through and get the electricity forecast data
+  //     for (const [key, value] of Object.entries(electricityForecast)) {
+  //       elecPredArray.push({
+  //         date:  d3.timeParse("%Y-%m-%d %H:%M:%S")(value.Timestamp),
+  //         value: value.ElectricityConsumptionForecast
+  //       })
+  //     }
+  //
+  //     // Loop through and get the real electricity data
+  //     for (const [key, value] of Object.entries(electricityForecast)) {
+  //       elecRealArray.push({
+  //         date:  d3.timeParse("%Y-%m-%d %H:%M:%S")(value.Timestamp),
+  //         value: value["Building 74 - kWh Total Electricity (kWh)"]
+  //       })
+  //     }
+  //
+  //     // Parse the data from the JSON inputs
+  //     var dataArray = [
+  //       // {
+  //       //   name:    "Electricity Real",
+  //       //   entries: electricityData.map( function (d) {
+  //       //     // debugger;
+  //       //     return {
+  //       //       date:  d3.timeParse("%Y-%m-%d %H:%M:%S")(d[0]),
+  //       //       value: d[1]
+  //       //       }})
+  //       // },
+  //       {
+  //         name:    "Real",
+  //         entries: elecRealArray
+  //       },
+  //       {
+  //         name:    "Prediction",
+  //         entries: elecPredArray
+  //       }
+  //     ];
+  //
+  //     console.log(dataArray);
+  //
+  //     var domainX = d3.extent(dataArray.map(values => {return values.entries.map(entry => entry.date);}).reduce((prev, curr) => prev.concat(curr)));
+  //     var domainY = d3.extent(dataArray.map(values => {return values.entries.map(entry => entry.value);}).reduce((prev, curr) => prev.concat(curr)));
+  //
+  //     // Scale the range of the data again
+  //     x.domain(domainX);
+  //     y.domain(domainY);
+  //
+  //     // Make the changes to the lines
+  //     svg.selectAll("myLines")
+  //       .duration(750)
+  //       .attr("d", valueline(data));
+  //     svg.selectAll
+  //   }
+  //
+  // }
 
 </script>
