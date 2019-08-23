@@ -5,7 +5,8 @@
 <script src="https://d3js.org/d3.v4.js"></script>
 
 <!-- Create a div where the graph will take place -->
-<div id="my_dataviz"></div>
+<div id="electRealViz"></div>
+<div id="electPredViz"></div>
 
 <!-- Color Scale -->
 <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
@@ -13,18 +14,41 @@
 <script>
 
   // Set the dimensions and margins of the graph
-  var margin = {top: 10, right: 100, bottom: 30, left: 60},
-    width  = 810 - margin.left - margin.right;
-    height = 750 - margin.top  - margin.bottom;
+  var marginReal     = {top: 10, right: 100, bottom: 30, left: 60};
+  var plotWidthReal  = 410 - marginReal.left - marginReal.right;
+  var plotHeightReal = 350 - marginReal.top  - marginReal.bottom;
 
   // Append the SVG object to the body of the page
-  var svg = d3.select("#my_dataviz")
+  var svgReal = d3.select("#electRealViz")
     .append("svg")
-      .attr("width",  width  + margin.left + margin.right)
-      .attr("height", height + margin.top  + margin.bottom)
+      .attr("width",  plotWidthReal  + marginReal.left + marginReal.right)
+      .attr("height", plotHeightReal + marginReal.top  + marginReal.bottom)
     .append("g")
       .attr("transform",
-            "translate(" + margin.left + ", " + margin.top + ")")
+            "translate(" + marginReal.left + ", " + marginReal.top + ")")
+
+  // Set the dimensions and margins of the graph
+  var marginPred     = {top: 10, right: 100, bottom: 30, left: 460};
+  var plotWidthPred  = 410 - marginPred.left - marginPred.right;
+  var plotHeightPred = 350 - marginPred.top  - marginPred.bottom;
+
+  // Append the SVG object to the body of the page
+  var svgPred = d3.select("#electPredViz")
+    .append("svg")
+      .attr("width",  plotWidthPred  + marginPred.left + marginPred.right)
+      .attr("height", plotHeightPred + marginPred.top  + marginPred.bottom)
+    .append("g")
+      .attr("transform",
+            "translate(" + marginPred.left + ", " + marginPred.top + ")")
+
+  // // Append the SVG object to the body of the page
+  // var svgPred = d3.select("#electPredViz")
+  //   .append("svg")
+  //     .attr("width",  width  + margin.left + margin.right)
+  //     .attr("height", height + margin.top  + margin.bottom)
+  //   .append("g")
+  //     .attr("transform",
+  //           "translate(" + margin.left + ", " + margin.top + ")")
 
   // d3.json("http://localhost:5000/electricity_data", function(json){
   // d3.json("http://localhost:5000/gas_data", function(data){
@@ -71,7 +95,8 @@
 
       // var dataGroups = ["Electricity Real"];
       // var dataGroups = ["Electricity Prediction"];
-      var dataGroups = ["Real", "Prediction"];
+      var dataGroupsReal = ["Real"];
+      var dataGroupsPred = ["Prediction"];
 
       // Truncate the data sets
       electricityData = electricityData.slice(electricityData.length - 40, electricityData.length);
@@ -80,8 +105,16 @@
       // console.log(electricityForecast);
       // console.log(electricityData);
 
-      var elecPredArray = [];
       var elecRealArray = [];
+      var elecPredArray = [];
+
+      // Loop through and get the real electricity data
+      for (const [key, value] of Object.entries(electricityForecast)) {
+        elecRealArray.push({
+          date:  d3.timeParse("%Y-%m-%d %H:%M:%S")(value.Timestamp),
+          value: value["Building 74 - kWh Total Electricity (kWh)"]
+        })
+      }
 
       // Loop through and get the electricity forecast data
       for (const [key, value] of Object.entries(electricityForecast)) {
@@ -92,39 +125,41 @@
         })
       }
 
-      // Loop through and get the real electricity data
-      for (const [key, value] of Object.entries(electricityForecast)) {
-        elecRealArray.push({
-          date:  d3.timeParse("%Y-%m-%d %H:%M:%S")(value.Timestamp),
-          value: value["Building 74 - kWh Total Electricity (kWh)"]
-        })
-      }
+      // // Parse the data from the JSON inputs
+      // var dataArrayPrediction = [
+      // {
+      //   name:    "Electricity Real",
+      //   entries: electricityData.map( function (d) {
+      //     // debugger;
+      //     return {
+      //       date:  d3.timeParse("%Y-%m-%d %H:%M:%S")(d[0]),
+      //       value: d[1]
+      //       }})
+      // },
+      // ];
 
       // Parse the data from the JSON inputs
-      var dataArray = [
-        // {
-        //   name:    "Electricity Real",
-        //   entries: electricityData.map( function (d) {
-        //     // debugger;
-        //     return {
-        //       date:  d3.timeParse("%Y-%m-%d %H:%M:%S")(d[0]),
-        //       value: d[1]
-        //       }})
-        // },
+      var dataArrayReal = [
         {
           name:    "Real",
           entries: elecRealArray
-        },
+        }
+      ];
+
+      // Parse the data from the JSON inputs
+      var dataArrayPred = [
         {
           name:    "Prediction",
           entries: elecPredArray
         }
       ];
 
+      var totDataArray = dataArrayReal.concat(dataArrayPred);
+
       // console.log(dataArray);
 
-      var domainX = d3.extent(dataArray.map(values => {return values.entries.map(entry => entry.date);}).reduce((prev, curr) => prev.concat(curr)));
-      var domainY = d3.extent(dataArray.map(values => {return values.entries.map(entry => entry.value);}).reduce((prev, curr) => prev.concat(curr)));
+      var domainX = d3.extent(totDataArray.map(values => {return values.entries.map(entry => entry.date);}).reduce((prev, curr) => prev.concat(curr)));
+      var domainY = d3.extent(totDataArray.map(values => {return values.entries.map(entry => entry.value);}).reduce((prev, curr) => prev.concat(curr)));
 
       // console.log(domainX, domainY);
 
@@ -136,50 +171,50 @@
 
       // Color scaling: One color for each group
       var myColor = d3.scaleOrdinal()
-        .domain(dataGroups)
+        .domain(totDataArray)
         .range(d3.schemeSet2);
 
       // var data = {date, value};
 
       // Add X axis --> It is a date format
-      var x = d3.scaleTime()
+      var xReal = d3.scaleTime()
         .domain(domainX)
         // .domain(d3.extent(dataArray[0].entries, function(d) { return d.date; }))
-        .range([ 0, width ]);
-      svg.append("g")
-        .attr("transform", "translate(0, " + height + ")")
-        .call(d3.axisBottom(x));
+        .range([ 0, plotWidthReal ]);
+      svgReal.append("g")
+        .attr("transform", "translate(0, " + plotHeightReal + ")")
+        .call(d3.axisBottom(xReal));
 
 
       // Add Y axis
-      var y = d3.scaleLinear()
+      var yReal = d3.scaleLinear()
         .domain(domainY)
         // .domain(d3.extent(dataArray[0].entries, function(d) { return d.value; }))
         // .domain( [8000, 9200] )
-        .range( [height, 0] )
-      svg.append("g")
-        .call(d3.axisLeft(y));
+        .range( [plotHeightReal, 0] );
+      svgReal.append("g")
+        .call(d3.axisLeft(yReal));
 
 
       // Add the lines
-      var line = d3.line()
-        .x(function(d) { return x(+d.date) })
-        .y(function(d) { return y(+d.value)});
+      var lineReal = d3.line()
+        .x(function(d) { return xReal(+d.date) })
+        .y(function(d) { return yReal(+d.value)});
 
       // Create the line elements
-      svg.selectAll("myLines")
-        .data(dataArray)
+      svgReal.selectAll("myLines")
+        .data(dataArrayReal)
         .enter()
         .append("path")
-          .attr("d", function(d) { return line(d.entries) })
+          .attr("d", function(d) { return lineReal(d.entries) })
           .attr("stroke", function(d){ return myColor(d.name) })
           .attr("data-legend", function(d){ return d.name })
           .style("stroke-width", 4)
           .style("fill", "none");
 
       // Add one dot in the legend for each name.
-      svg.selectAll("myDots")
-        .data(dataGroups)
+      svgReal.selectAll("myDots")
+        .data(dataGroupsReal)
         .enter()
         .append("circle")
           .attr("cx", 15)
@@ -190,8 +225,72 @@
           .style("fill", function(d){ return myColor(d) })
 
       // Add a legend at the end of each line
-      svg.selectAll("myLabels")
-        .data(dataGroups)
+      svgReal.selectAll("myLabels")
+        .data(dataGroupsReal)
+        .enter()
+          // .append('g')
+        .append("text")
+          .attr("x", 25)
+          // 100 is where the first dot appears. 25 is the distance between dots
+          .attr("y", function(d, i) { return 15 + i*25 })
+          .style("fill", function(d) { return myColor(d) })
+          .text(function(d) { return d })
+          .attr("text-anchor", "left")
+          .style("alignmnet-baseline", "middle")
+
+      // var data = {date, value};
+
+      // Add X axis --> It is a date format
+      var xPred = d3.scaleTime()
+        .domain(domainX)
+        // .domain(d3.extent(dataArray[0].entries, function(d) { return d.date; }))
+        .range([ 0, plotWidthPred ]);
+      svgPred.append("g")
+        .attr("transform", "translate(0, " + plotHeightPred + ")")
+        .call(d3.axisBottom(xPred));
+
+
+      // Add Y axis
+      var yPred = d3.scaleLinear()
+        .domain(domainY)
+        // .domain(d3.extent(dataArray[0].entries, function(d) { return d.value; }))
+        // .domain( [8000, 9200] )
+        .range( [plotHeightPred, 0] )
+      svgPred.append("g")
+        .call(d3.axisLeft(yPred));
+
+
+      // Add the lines
+      var linePred = d3.line()
+        .x(function(d) { return xPred(+d.date) })
+        .y(function(d) { return yPred(+d.value)});
+
+      // Create the line elements
+      svgPred.selectAll("myLines")
+        .data(dataArrayPred)
+        .enter()
+        .append("path")
+          .attr("d", function(d) { return linePred(d.entries) })
+          .attr("stroke", function(d){ return myColor(d.name) })
+          .attr("data-legend", function(d){ return d.name })
+          .style("stroke-width", 4)
+          .style("fill", "none");
+
+      // Add one dot in the legend for each name.
+      svgPred.selectAll("myDots")
+        .data(dataGroupsPred)
+        .enter()
+        .append("circle")
+          .attr("cx", 15)
+          // 100 is where the first dot appears. 25 is the distance between dots
+          .attr("cy", function(d, i) { return 10 + i*25 })
+          .attr("r", 5)
+          // .attr("stroke", "white")
+          .style("fill", function(d){ return myColor(d) })
+
+      // Add a legend at the end of each line
+      svgPred.selectAll("myLabels")
+        .data(dataGroupsPred)
         .enter()
           // .append('g')
         .append("text")
@@ -204,102 +303,5 @@
           .style("alignmnet-baseline", "middle")
     }
   }
-
-  // function updateData() {
-  //
-  //   d3.queue()
-  //     // .defer(d3.csv, "http://localhost:5000/electricity_forecast")
-  //     .defer(d3.json, "http://localhost:5000/electricity_forecast")
-  //     .defer(d3.json, "http://localhost:5000/electricity_data")
-  //     // .defer(d3.json, "http://localhost:5000/gas_data")
-  //     .await(plotUpdatedData);
-  //
-  //   // Select the section we want to apply our changes to
-  //   var svg = d3.select("#my_dataviz").transition();
-  //
-  //   // d3.json("http://localhost:5000/electricity_forecast", function (electricity_data) {
-  //   function plotUpdatedData(error, electricityForecast, electricityData) {
-  //
-  //     var elecPredArray = [];
-  //     var elecRealArray = [];
-  //
-  //     // Loop through and get the electricity forecast data
-  //     for (const [key, value] of Object.entries(electricityForecast)) {
-  //       elecPredArray.push({
-  //         date:  d3.timeParse("%Y-%m-%d %H:%M:%S")(value.Timestamp),
-  //         value: value.ElectricityConsumptionForecast
-  //       })
-  //     }
-  //
-  //     // Loop through and get the real electricity data
-  //     for (const [key, value] of Object.entries(electricityForecast)) {
-  //       elecRealArray.push({
-  //         date:  d3.timeParse("%Y-%m-%d %H:%M:%S")(value.Timestamp),
-  //         value: value["Building 74 - kWh Total Electricity (kWh)"]
-  //       })
-  //     }
-  //
-  //     // Parse the data from the JSON inputs
-  //     var dataArray = [
-  //       // {
-  //       //   name:    "Electricity Real",
-  //       //   entries: electricityData.map( function (d) {
-  //       //     // debugger;
-  //       //     return {
-  //       //       date:  d3.timeParse("%Y-%m-%d %H:%M:%S")(d[0]),
-  //       //       value: d[1]
-  //       //       }})
-  //       // },
-  //       {
-  //         name:    "Real",
-  //         entries: elecRealArray
-  //       },
-  //       {
-  //         name:    "Prediction",
-  //         entries: elecPredArray
-  //       }
-  //     ];
-  //
-  //     console.log(dataArray);
-  //
-  //     var domainX = d3.extent(dataArray.map(values => {return values.entries.map(entry => entry.date);}).reduce((prev, curr) => prev.concat(curr)));
-  //     var domainY = d3.extent(dataArray.map(values => {return values.entries.map(entry => entry.value);}).reduce((prev, curr) => prev.concat(curr)));
-  //
-  //     // Add X axis --> It is a date format
-  //     var x = d3.scaleTime()
-  //       .domain(domainX)
-  //       // .domain(d3.extent(dataArray[0].entries, function(d) { return d.date; }))
-  //       .range([ 0, width ]);
-  //     // svg.append("g")
-  //     //   .attr("transform", "translate(0, " + height + ")")
-  //     //   .call(d3.axisBottom(x));
-  //
-  //
-  //     // Add Y axis
-  //     var y = d3.scaleLinear()
-  //       .domain(domainY)
-  //       // .domain(d3.extent(dataArray[0].entries, function(d) { return d.value; }))
-  //       // .domain( [8000, 9200] )
-  //       .range( [height, 0] );
-  //     // svg.append("g")
-  //     //   .call(d3.axisLeft(y));
-  //
-  //     // // Scale the range of the data again
-  //     // x.domain(domainX);
-  //     // y.domain(domainY);
-  //
-  //     // Make the changes to the lines
-  //     svg.selectAll("myLines")
-  //       .duration(750)
-  //       .data(dataArray);
-  //       // .attr("d", valueline(data));
-  //     // svg.selectA(".x.axis")
-  //     //   .duration(750)
-  //     //   .call(xAxis);
-  //     // svg.select(".y.axis")
-  //     //   .duration(750)
-  //     //   .call(yAxis);
-  //   }
-  // }
 
 </script>
